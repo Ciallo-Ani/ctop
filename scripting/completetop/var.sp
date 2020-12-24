@@ -15,7 +15,7 @@ float g_fFinalTime[MAXPLAYERS + 1];
 char g_szFinalTime[MAXPLAYERS + 1][32];
 
 // Player's Death times
-int g_fDeath[MAXPLAYERS + 1];
+int g_iDeath[MAXPLAYERS + 1];
 
 // Client's steamID
 char g_szSteamID[MAXPLAYERS + 1][32];
