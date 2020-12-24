@@ -262,7 +262,7 @@ public Action TIMER_END(Event re, const char[] name, bool dontBroadcast)
 	g_fFinalTime[client] = GetGameTime() - g_fStartTime[client];
 	FormatTimeFloat(1, g_fFinalTime[client], 3, g_szFinalTime[client], 32);
 	
-	db_InsertLatestRecords(g_szSteamID[client], szName, g_fFinalTime[client], g_szMapName, g_fDeath[client]);
+	db_InsertLatestRecords(g_szSteamID[client], szName, g_fFinalTime[client], g_szMapName, g_iDeath[client]);
 	
 	CPrintToChatAll("{pink}%s\x01 已通关！时间：{aqua}%s", szName, g_szFinalTime[client]);
 }
