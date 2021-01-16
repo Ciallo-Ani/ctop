@@ -1,0 +1,30 @@
+"Phrases"
+{
+    "FirstCompletion"
+	{
+		"#format"	"{1:s},{2:N},{3:s},{4:s},{5:s},{6:s},{7:s},{8:d},{9:s}"
+		"en"		"{1}{2}{3} finished in {4}{5}{6} with {7}{8}{9} deaths"
+	}
+    "WRChat"
+    {
+        "#format"   "{1:s},{2:N},{3:s},{4:s},{5:s},{6:s},{7:s},{8:s},{9:s},{10:s},{11:d},{12:s}"
+        "en"    "{1}{2}{3} hold {4}{5}{6} in {7}{8}{9} with {10}{11}{12} deaths."
+    }
+    "WRMapNoRecords"
+	{
+		"en"		"No records found."
+	}
+    "WRRecordFor"
+	{
+		"en"		"Records for"
+	}
+    "WRJumps"
+	{
+		"en"		"Jumps"
+	}
+    "WRMap"
+	{
+		"#format"	"{1:s}"
+		"en"		"Records for {1}"
+	}
+}
