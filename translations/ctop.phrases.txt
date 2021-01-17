@@ -7,8 +7,8 @@
 	}
 	"Chat"
 	{
-		"#format"   "{1:s},{2:s},{3:s},{4:d},{5:d}"
-		"en"    "{aqua}{1}{default} hold {green}{2}{default} in {yellow}{3}{default} with {red}{4}{default} deaths and {red}{5}{default} kills."
+		"#format"	"{1:s},{2:s},{3:s},{4:d},{5:d}"
+		"en"		"{aqua}{1}{default} hold {green}{2}{default} in {yellow}{3}{default} with {red}{4}{default} deaths and {red}{5}{default} kills."
 	}
 	"NoRecords"
 	{
