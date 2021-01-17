@@ -9,7 +9,7 @@ DatabaseType: MySQL
 
 Database: "ctop"
 
-sm_wr map   -> print best time to chat(if time stacked, choose the best killer)
+sm_wr map   -> print best time to chat(if time is stacked, choose the best killer)
 
 sm_top map  -> show time, deaths, kills, and completions
 
