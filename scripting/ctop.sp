@@ -13,20 +13,14 @@ bool gB_MySQL = false;
 // Current map's name
 char gS_Map[160];
 
-// Player's deaths
-int g_iDeaths[MAXPLAYERS + 1];
-
-// bool Player's Completions
-bool g_bCounts[MAXPLAYERS + 1];
-
-// bool Player's FasterTime
-bool g_bFasterTime[MAXPLAYERS + 1];
-
 // total start time
 float g_fStartTime = -1.0;
 
 // Reset Player's deaths
-bool g_bResetDeaths = false;
+bool g_bResetDeaths[MAXPLAYERS + 1] = true;
+
+// Reset All Player's stats
+bool g_bResetAll = true;
 
 // player timer variables
 playertimer_t gA_Timers[MAXPLAYERS+1];
@@ -47,6 +41,8 @@ public void OnPluginStart()
 	HookEvent("nmrih_round_begin", TIMER_START);
 	HookEvent("player_extracted", TIMER_END);
 	HookEvent("player_death", EVENT_DEATH);
+	HookEvent("player_spawn", EVENT_SPAWN);
+	HookEvent("npc_killed", EVENT_NPC);
 
 	RegConsoleCmd("sm_wr", Command_WR, "print wr in chat");
 	RegConsoleCmd("sm_top", Command_TOP, "print wr in chat");
@@ -69,24 +65,29 @@ public void OnMapStart()
 	GetMapDisplayName(gS_Map, gS_Map, 160);
 }
 
+public void OnClientPutInServer(int client)
+{
+	gA_Timers[client].iDeaths = 0;
+	gA_Timers[client].iKills = 0;
+}
+
 /* public Action Command_test(int client, int args)
 {
 	
 } */
 
-public Action TIMER_START(Event re, const char[] name, bool dontBroadcast)
+public Action TIMER_START(Event e, const char[] n, bool b)
 {
 	g_fStartTime = GetGameTime();
-	g_bResetDeaths = true;
+	g_bResetAll = true;
 }
 
-public Action TIMER_END(Event re, const char[] name, bool dontBroadcast)
+public Action TIMER_END(Event e, const char[] n, bool b)
 {
-	int client = re.GetInt("player_id");
+	int client = e.GetInt("player_id");
 
 	// Get client name
-	char sName[128];
-	GetClientName(client, sName, 128);
+	GetClientName(client, gA_Timers[client].sName, 128);
 	
 	// Get SteamID
 	gA_Timers[client].iSteamid = GetSteamAccountID(client);
@@ -95,47 +96,47 @@ public Action TIMER_END(Event re, const char[] name, bool dontBroadcast)
 	gA_Timers[client].fFinalTime = GetGameTime() - g_fStartTime;
 	FormatTimeFloat(1, gA_Timers[client].fFinalTime, 3, gA_Timers[client].sFinalTime, 32);
 
-	// Get Player's Deaths
-	gA_Timers[client].iDeaths = g_iDeaths[client];
-
 	char sQuery[512];
-	char sQuery2[512];
 
 	FormatEx(sQuery, 512, "SELECT time, counts FROM playertimes WHERE map = '%s' AND auth = %d ORDER BY time ASC;", gS_Map, gA_Timers[client].iSteamid);
 
 	gH_SQL.Query(SQL_OnFinishCheck_Callback, sQuery, GetClientSerial(client), DBPrio_High);
-
-	if(!g_bCounts[client])
-	{
-		FormatEx(sQuery2, 512,
-		"INSERT INTO playertimes (auth, name, map, time, deaths, counts) VALUES (%d, '%s', '%s', %f, %d, %d);",
-		gA_Timers[client].iSteamid, sName, gS_Map, gA_Timers[client].fFinalTime, gA_Timers[client].iDeaths, ++gA_Timers[client].iCounts);
-	}
-	else if(g_bCounts[client] && g_bFasterTime[client])
-	{
-		FormatEx(sQuery2, 512,
-		"UPDATE playertimes SET map = %s, time = %f, deaths = %d, counts = counts + 1 WHERE map = '%s' AND auth = %d;", 
-		gS_Map, gA_Timers[client].fFinalTime, gA_Timers[client].iDeaths, gS_Map, gA_Timers[client].iSteamid);
-	}
-
-	CPrintToChatAll("%t", "Complete", client, gA_Timers[client].sFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iCounts);
-
-	gH_SQL.Query(SQL_OnFinish_Callback, sQuery2, GetClientSerial(client), DBPrio_High);
-
-	g_iDeaths[client] = 0;
 }
 
-public Action EVENT_DEATH(Event de, const char[] name, bool dontBroadcast)
+public Action EVENT_DEATH(Event e, const char[] n, bool b)
 {
-	int client = GetClientOfUserId(de.GetInt("userid"));
+	int client = GetClientOfUserId(e.GetInt("userid"));
 
-	if(g_bResetDeaths)
+	if(g_bResetDeaths[client])
 	{
-		g_iDeaths[client] = 0;
-		g_bResetDeaths = false;
+		gA_Timers[client].iDeaths = 0;
+		g_bResetDeaths[client] = false;
 	}
 
-	g_iDeaths[client]++;
+	gA_Timers[client].iDeaths++;
+}
+
+public Action EVENT_SPAWN(Event e, const char[] n, bool b)
+{
+	int client = GetClientOfUserId(e.GetInt("userid"));
+
+	if(g_bResetAll)
+	{
+		gA_Timers[client].iDeaths = 0;
+		gA_Timers[client].iKills = 0;
+		g_bResetDeaths[client] = true;
+		g_bResetAll = false;
+	}
+}
+
+public Action EVENT_NPC(Event e, const char[] n, bool b)
+{
+	int client = e.GetInt("killeridx");
+
+	if(IsValidClient(client))
+	{
+		gA_Timers[client].iKills++;
+	}
 }
 
 public Action Command_WR(int client, int args)
@@ -145,10 +146,18 @@ public Action Command_WR(int client, int args)
 		return Plugin_Handled;
 	}
 
-	char sCommand[16];
-	GetCmdArg(0, sCommand, 16);
+	char sCommand[32];
 
-	ShowWR(client, gS_Map);
+	if (args == 0)
+	{
+		FormatEx(sCommand, 160, "%s", gS_Map);
+	}
+	else
+	{
+		GetCmdArg(1, sCommand, 32);
+	}
+
+	ShowWR(client, sCommand);
 
 	return Plugin_Handled;
 }
@@ -160,10 +169,18 @@ public Action Command_TOP(int client, int args)
 		return Plugin_Handled;
 	}
 
-	char sCommand[16];
-	GetCmdArg(0, sCommand, 16);
+	char sCommand[32];
 
-	StartWRMenu(client, gS_Map);
+	if (args == 0)
+	{
+		FormatEx(sCommand, 160, "%s", gS_Map);
+	}
+	else
+	{
+		GetCmdArg(1, sCommand, 32);
+	}
+
+	StartWRMenu(client, sCommand);
 
 	return Plugin_Handled;
 }
@@ -179,7 +196,7 @@ void ShowWR(int client, const char[] map)
 	gH_SQL.Escape(map, sEscapedMap, iLength);
 
 	char sQuery[512];
-	FormatEx(sQuery, 512, "SELECT name, time, deaths, auth FROM playertimes WHERE map = '%s' ORDER BY time ASC, deaths ASC;", sEscapedMap);
+	FormatEx(sQuery, 512, "SELECT name, time, deaths, kills FROM playertimes WHERE map = '%s' ORDER BY time ASC, kills DESC;", sEscapedMap);
 	gH_SQL.Query(SQL_WR_Callback, sQuery, dp);
 }
 
@@ -194,7 +211,7 @@ void StartWRMenu(int client, const char[] map)
 	gH_SQL.Escape(map, sEscapedMap, iLength);
 
 	char sQuery[512];
-	FormatEx(sQuery, 512, "SELECT name, time, deaths, auth FROM playertimes WHERE map = '%s' ORDER BY time ASC, deaths ASC;", sEscapedMap);
+	FormatEx(sQuery, 512, "SELECT name, time, deaths, counts, kills FROM playertimes WHERE map = '%s' ORDER BY time ASC, kills DESC;", sEscapedMap);
 	gH_SQL.Query(SQL_WR_Callback2, sQuery, dp);
 }
 
@@ -214,31 +231,45 @@ public void SQL_OnFinishCheck_Callback(Database db, DBResultSet results, const c
 		return;
 	}
 
+	if(g_bResetDeaths[client])
+	{
+		gA_Timers[client].iDeaths = 0;
+	}
+
+	char sQuery[512];
+
 	if(results.FetchRow() && results.HasResults)
 	{
-		g_bCounts[client] = true;
 		gA_Timers[client].iCounts = results.FetchInt(1);
-
-		if(gA_Timers[client].fFinalTime > results.FetchFloat(0))
+		
+		if(gA_Timers[client].fFinalTime < results.FetchFloat(0))
 		{
-			g_bFasterTime[client] = false;
+			FormatEx(sQuery, 512,
+			"UPDATE playertimes SET time = %f, deaths = %d, counts = counts + 1, kills = %d WHERE map = '%s' AND auth = %d;", 
+			gA_Timers[client].fFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills, gS_Map, gA_Timers[client].iSteamid);
 		}
 		else
 		{
-			g_bFasterTime[client] = true;
+			FormatEx(sQuery, 512,
+			"UPDATE playertimes SET counts = counts + 1 WHERE map = '%s' AND auth = %d;",
+			gS_Map, gA_Timers[client].iSteamid);
 		}
 	}
 	else
 	{
-		g_bCounts[client] = false;
+		FormatEx(sQuery, 512,
+		"INSERT INTO playertimes (auth, name, map, time, deaths, counts, kills) VALUES (%d, '%s', '%s', %f, %d, 1, %d);",
+		gA_Timers[client].iSteamid, gA_Timers[client].sName, gS_Map, gA_Timers[client].fFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills);
 	}
+
+	gH_SQL.Query(SQL_OnFinish_Callback, sQuery, GetClientSerial(client), DBPrio_High);
 }
 
 public void SQL_OnFinish_Callback(Database db, DBResultSet results, const char[] error, any data)
 {
 	if(results == null)
 	{
-		LogError("Timer SQL query failed. Reason: %s", error);
+		LogError("Timer SQL query(onfinish) failed. Reason: %s", error);
 
 		return;
 	}
@@ -249,6 +280,10 @@ public void SQL_OnFinish_Callback(Database db, DBResultSet results, const char[]
 	{
 		return;
 	}
+
+	CPrintToChatAll("%t", "Complete", gA_Timers[client].sName, gA_Timers[client].sFinalTime, gA_Timers[client].iDeaths, gA_Timers[client].iKills, ++gA_Timers[client].iCounts);
+
+	g_bResetDeaths[client] = true;
 }
 
 public void SQL_WR_Callback(Database db, DBResultSet results, const char[] error, DataPack data)
@@ -289,11 +324,14 @@ public void SQL_WR_Callback(Database db, DBResultSet results, const char[] error
 		// 2 - deaths
 		int deaths = results.FetchInt(2);
 
-		CPrintToChatAll("%t", "Chat", sName, gS_Map, sTime, deaths);
+		// 3 - kills
+		int kills = results.FetchInt(3);
+
+		CPrintToChatAll("%t", "Chat", sName, sMap, sTime, deaths, kills);
 	}
 	else
 	{
-		CPrintToChatAll("%t", "MapNoRecords");
+		CPrintToChatAll("%t", "NoRecords");
 	}
 }
 
@@ -341,8 +379,14 @@ public void SQL_WR_Callback2(Database db, DBResultSet results, const char[] erro
 			// 2 - deaths
 			int deaths = results.FetchInt(2);
 
+			// 3 - completions
+			int counts = results.FetchInt(3);
+
+			// 4 - kills
+			int kills = results.FetchInt(4);
+
 			char sDisplay[128];
-			FormatEx(sDisplay, 128, "%s - %s (%d %T)", sName, sTime, deaths, "Deaths", client);
+			FormatEx(sDisplay, 128, "%t", "Top", sName, sTime, deaths, kills, counts, client);
 			hMenu.AddItem("", sDisplay, ITEMDRAW_DISABLED);
 		}
 	}
@@ -353,9 +397,9 @@ public void SQL_WR_Callback2(Database db, DBResultSet results, const char[] erro
 	{
 		hMenu.SetTitle("%T", "Map", client, sMap);
 		char sNoRecords[64];
-		FormatEx(sNoRecords, 64, "%T", "MapNoRecords", client);
+		FormatEx(sNoRecords, 64, "%t", "NoRecords", client);
 
-		hMenu.AddItem("-1", sNoRecords);
+		hMenu.AddItem("-1", sNoRecords, ITEMDRAW_DISABLED);
 	}
 
 	else
@@ -392,7 +436,7 @@ void SQL_DBConnect()
 	if(gB_MySQL)
 	{
 		FormatEx(sQuery, 1024,
-		"CREATE TABLE IF NOT EXISTS `playertimes` (auth INT, name VARCHAR(32), time FLOAT NOT NULL DEFAULT '-1.0', map VARCHAR(128), deaths INT, counts INT) DEFAULT CHARSET=utf8mb4;");
+		"CREATE TABLE IF NOT EXISTS `playertimes` (auth INT, name VARCHAR(32), time FLOAT NOT NULL DEFAULT '-1.0', map VARCHAR(128), deaths INT, counts INT, kills INT) DEFAULT CHARSET=utf8mb4;");
 	}
 
 	gH_SQL.Query(SQL_CreateTable_Callback, sQuery);

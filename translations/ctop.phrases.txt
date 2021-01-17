@@ -1,28 +1,29 @@
 "Phrases"
 {
-	"Complete"
+    "Complete"
 	{
-		"#format"	"{1:s},{2:s},{3:d},{4:d}"
-		"en"		"{1} finished in {2} with {3} deaths ({4} completions)"
+		"#format"	"{1:s},{2:s},{3:d},{4:d},{5:d}"
+		"en"		"{cyan}{1}{default} finished in {orange}{2}{default} with {darkred}{3}{default} deaths and {red}{4}{default} kills ({lime}{5}{default} completions)"
 	}
-	"Chat"
-	{
-		"#format"   "{1:s},{2:s},{3:s},{4:d}"
-		"en"    "[ctop] {pink}{1}{default} hold {green}{2}{default} in {yellow}{3}{default} with {red}{4}{default} deaths."
-	}
-	"NoRecords"
+    "Chat"
+    {
+        "#format"   "{1:s},{2:s},{3:s},{4:d},{5:d}"
+        "en"    "{aqua}{1}{default} hold {green}{2}{default} in {yellow}{3}{default} with {red}{4}{default} deaths and {red}{5}{default} kills."
+    }
+    "NoRecords"
 	{
 		"en"		"No records found."
 	}
-	"RecordFor"
+    "RecordFor"
 	{
 		"en"		"Records for"
 	}
-	"Deaths"
+    "Top"
 	{
-		"en"		"Deaths"
+		"#format"	"{1:s},{2:s},{3:d},{4:d},{5:d}"
+		"en"		"{1} - {2} - {3} Deaths - {4} Kills ({5} Total Times)"
 	}
-	"Map"
+    "Map"
 	{
 		"#format"	"{1:s}"
 		"en"		"Records for {1}"

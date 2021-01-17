@@ -8,9 +8,11 @@ enum struct playertimer_t
 	float fStartTime;
 	float fFinalTime;
 	char sFinalTime[32];
+	char sName[128];
 	int iSteamid;
 	int iDeaths;
 	int iCounts;
+	int iKills;
 }
 
 stock void FormatTimeFloat(int client, float time, int type, char[] string, int length)
@@ -212,7 +214,7 @@ stock void FormatTimeFloat(int client, float time, int type, char[] string, int 
 // check if client is valid
 stock bool IsValidClient(int client)
 {
-	return (client >= 1 && client <= MaxClients && IsClientConnected(client) && IsClientInGame(client) && !IsClientSourceTV(client) && IsPlayerAlive(client));
+	return (client >= 1 && client <= MaxClients && IsClientConnected(client) && IsClientInGame(client) && !IsClientSourceTV(client));
 }
 
 stock Database GetTimerDatabaseHandle()
