@@ -19,9 +19,6 @@ float g_fStartTime = -1.0;
 // Reset Player's deaths
 bool g_bResetDeaths[MAXPLAYERS + 1];
 
-// Reset All Player's stats
-bool g_bResetAll = true;
-
 // player timer variables
 playertimer_t gA_Timers[MAXPLAYERS+1];
 
@@ -41,7 +38,6 @@ public void OnPluginStart()
 	HookEvent("nmrih_round_begin", TIMER_START);
 	HookEvent("player_extracted", TIMER_END);
 	HookEvent("player_death", EVENT_DEATH);
-	HookEvent("player_spawn", EVENT_SPAWN);
 	HookEvent("npc_killed", EVENT_NPC);
 
 	RegConsoleCmd("sm_wr", Command_WR, "print wr in chat");
@@ -79,7 +75,12 @@ public void OnClientPutInServer(int client)
 public Action TIMER_START(Event e, const char[] n, bool b)
 {
 	g_fStartTime = GetGameTime();
-	g_bResetAll = true;
+	
+	for(int i = 1; i <= MaxClients; i++)
+	{
+		gA_Timers[i].iDeaths = 0;
+		gA_Timers[i].iKills = 0;
+	}
 }
 
 public Action TIMER_END(Event e, const char[] n, bool b)
@@ -114,19 +115,6 @@ public Action EVENT_DEATH(Event e, const char[] n, bool b)
 	}
 
 	gA_Timers[client].iDeaths++;
-}
-
-public Action EVENT_SPAWN(Event e, const char[] n, bool b)
-{
-	int client = GetClientOfUserId(e.GetInt("userid"));
-
-	if(g_bResetAll)
-	{
-		gA_Timers[client].iDeaths = 0;
-		gA_Timers[client].iKills = 0;
-		g_bResetDeaths[client] = true;
-		g_bResetAll = false;
-	}
 }
 
 public Action EVENT_NPC(Event e, const char[] n, bool b)
