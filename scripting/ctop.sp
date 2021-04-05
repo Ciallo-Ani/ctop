@@ -17,7 +17,7 @@ char gS_Map[160];
 float g_fStartTime = -1.0;
 
 // Reset Player's deaths
-bool g_bResetDeaths[MAXPLAYERS + 1] = true;
+bool g_bResetDeaths[MAXPLAYERS + 1];
 
 // Reset All Player's stats
 bool g_bResetAll = true;
